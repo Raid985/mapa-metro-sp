@@ -1,0 +1,1060 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>Rede Metropolitana de São Paulo | Horizonte 2050</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+<style>
+:root {
+  color-scheme: light only;
+  --navy:#073d70;
+  --shadow:0 3px 15px rgba(0,0,0,.16);
+}
+* {box-sizing:border-box}
+html,body {
+  margin:0;width:100%;height:100%;height:100dvh;
+  overflow:hidden;font-family:Arial,Helvetica,sans-serif;
+  color:#20252b;background:#fff;
+}
+button,input {font-family:inherit}
+button {border:0;cursor:pointer}
+#map {position:absolute;inset:0;width:100%;height:100%;z-index:1;background:#f5f5f5}
+.leaflet-tile-pane {filter:grayscale(85%) brightness(106%) contrast(88%)}
+body.colored .leaflet-tile-pane {filter:none}
+.leaflet-control-attribution {font-size:9px!important}
+.leaflet-popup-content-wrapper {border-radius:12px;box-shadow:var(--shadow)}
+.leaflet-popup-content {margin:14px;min-width:195px}
+.station-label {
+  background:white;border:1px solid #ddd;border-radius:4px;
+  padding:3px 5px;font-size:10px;font-weight:bold;
+  white-space:nowrap;box-shadow:0 1px 4px #0002;color:#252525;
+}
+.station-dot {
+  width:11px;height:11px;border:2px solid white;border-radius:50%;
+  box-shadow:0 0 0 1px #3338;
+}
+#topbar {
+  position:absolute;z-index:1000;top:env(safe-area-inset-top,8px);
+  left:10px;right:10px;display:flex;flex-direction:column;
+  gap:7px;pointer-events:none;
+}
+.panel {background:#fff;border-radius:12px;box-shadow:var(--shadow);pointer-events:auto}
+.brand {display:flex;align-items:center;gap:9px;padding:10px 12px}
+.brand-icon {
+  width:35px;height:35px;border-radius:9px;background:var(--navy);
+  color:white;display:grid;place-items:center;font-size:20px;
+}
+.brand h1 {font-size:13px;margin:0}
+.brand small {display:block;font-size:10px;color:#777;margin-top:3px}
+.searchbox {display:flex;align-items:center;gap:7px;padding:0 12px}
+.searchbox input {
+  width:100%;border:0;outline:0;height:43px;font-size:14px;
+  background:white;color:#222;
+}
+#suggestions {display:none;max-height:220px;overflow-y:auto;padding:4px}
+.suggestion {padding:11px;font-size:13px;border-bottom:1px solid #eee;cursor:pointer}
+.suggestion:active {background:#eee}
+#stale {
+  display:none;padding:8px 11px;font-size:11px;color:#805600;
+  background:#fff5d7;border:1px solid #efd38b;
+}
+#stale button {
+  background:#805600;color:white;border-radius:5px;
+  padding:6px 8px;margin-left:5px;font-size:10px;
+}
+#mapbuttons {
+  position:absolute;z-index:900;right:12px;top:45%;
+  display:flex;flex-direction:column;gap:8px;
+}
+.mapbtn {
+  width:42px;height:42px;border-radius:11px;background:white;
+  box-shadow:var(--shadow);font-size:20px;display:grid;place-items:center;
+}
+#themebtn {
+  position:absolute;z-index:900;top:155px;right:12px;
+  background:white;padding:9px 11px;border-radius:9px;
+  box-shadow:var(--shadow);font-size:11px;font-weight:bold;
+}
+#drawer {
+  position:absolute;z-index:1100;bottom:0;left:0;right:0;
+  height:72%;max-height:720px;background:white;border-radius:19px 19px 0 0;
+  box-shadow:0 -5px 24px #0002;
+  transform:translateY(calc(100% - 58px - env(safe-area-inset-bottom,0px)));
+  transition:transform .28s ease;display:flex;flex-direction:column;
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+#drawer.open {transform:translateY(0)}
+#drawerhead {
+  min-height:58px;display:flex;align-items:center;
+  justify-content:space-between;padding:0 16px;
+  cursor:pointer;border-bottom:1px solid #eee;
+}
+#drawerhead strong {font-size:15px}
+#drawerbody {overflow:auto;padding:12px 14px 22px}
+.quickfilters {display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.quickfilters button {
+  padding:11px 6px;border-radius:8px;background:#eee;
+  font-size:11px;font-weight:bold;
+}
+.quickfilters button.active {background:var(--navy);color:white}
+.updated {font-size:10px;color:#777;margin:10px 0}
+.group-title {
+  font-size:11px;font-weight:bold;color:#555;
+  padding:13px 4px 5px;border-bottom:1px solid #ddd;
+}
+.lineitem {
+  display:flex;align-items:center;gap:9px;padding:9px 4px;
+  border-bottom:1px solid #eee;
+}
+.lineitem input {width:18px;height:18px;accent-color:var(--navy)}
+.linecolor {width:6px;height:30px;border-radius:5px;flex-shrink:0}
+.linetext {flex:1;font-size:12px;min-width:0}
+.linetext b {display:block}
+.linetext small {color:#888;font-size:10px}
+.linetext em {font-style:normal;font-size:9px;color:#888}
+.status {
+  font-size:11px;font-weight:bold;display:inline-block;
+  padding:5px 8px;border-radius:5px;
+}
+.operational {background:#e0f5e9;color:#16834c}
+.construction {background:#fff0dc;color:#c07800}
+.project {background:#eee;color:#666}
+.cancelled {background:#ffe1e1;color:#bf2929}
+.progress {height:7px;background:#eee;overflow:hidden;border-radius:8px;margin-top:8px}
+.progress div {height:100%;background:#e9a12d}
+.cancelled-note {
+  font-size:11px;color:#b32626;background:#fff0f0;
+  border:1px solid #f0caca;border-radius:6px;padding:8px;margin-top:8px;
+  line-height:1.4;
+}
+#refresh {
+  width:100%;padding:12px;background:var(--navy);color:white;
+  border-radius:9px;margin-top:14px;font-weight:bold;
+}
+.legend {font-size:10px;color:#777;margin:12px 0;line-height:1.7}
+.legend-sample {
+  display:inline-block;width:24px;border-top:4px solid;
+  vertical-align:middle;margin:0 5px 0 2px;
+}
+.legend-dashed {border-top-style:dashed}
+#gpsmarker {
+  background:#2879ef;width:17px;height:17px;border-radius:50%;
+  border:3px solid white;box-shadow:0 0 0 3px #2879ef66;
+}
+@media(min-width:700px) {
+  #topbar {width:370px;right:auto}
+  #drawer {width:390px;right:auto;height:78%;transform:translateY(calc(100% - 58px))}
+  #drawer.open {transform:translateY(0)}
+  #themebtn {top:15px;right:70px}
+}
+</style>
+</head>
+
+<body>
+<div id="map"></div>
+
+<div id="topbar">
+  <div class="panel brand">
+    <div class="brand-icon">🚇</div>
+    <div>
+      <h1>REDE METROPOLITANA DE SÃO PAULO</h1>
+      <small>MAPA GEOGRÁFICO • HORIZONTE FINAL 2040–2050</small>
+    </div>
+  </div>
+  <div class="panel searchbox">
+    <span>🔎</span>
+    <input id="search" placeholder="Buscar estação ou terminal..." autocomplete="off">
+  </div>
+  <div id="suggestions" class="panel"></div>
+  <div id="stale" class="panel">
+    ⚠️ Dados com mais de 3 meses
+    <button onclick="copyUpdate()">Copiar comando Atualizar</button>
+  </div>
+</div>
+
+<button id="themebtn" onclick="toggleTheme()">☀ Claro Suave</button>
+
+<div id="mapbuttons">
+  <button class="mapbtn" onclick="locateUser()" title="Minha localização">📍</button>
+  <button class="mapbtn" onclick="map.zoomIn()" title="Aumentar zoom">＋</button>
+  <button class="mapbtn" onclick="map.zoomOut()" title="Diminuir zoom">−</button>
+</div>
+
+<div id="drawer">
+  <div id="drawerhead" onclick="toggleDrawer()">
+    <strong>☰ LINHAS E OPERADORAS</strong>
+    <span id="drawerarrow">⌃</span>
+  </div>
+  <div id="drawerbody">
+    <div class="quickfilters">
+      <button id="currentBtn" onclick="setMode('current')">Rede Atual<br>(Só em Operação)</button>
+      <button id="futureBtn" class="active" onclick="setMode('all')">Horizonte Final<br>(Todas as Linhas)</button>
+    </div>
+    <div class="updated" id="updatedLabel"></div>
+    <div id="lineList"></div>
+    <div class="legend">
+      <b>LEGENDA</b><br>
+      <span style="color:#16834c">●</span> Em Operação
+      <span style="color:#c07800">●</span> Em Construção
+      <span style="color:#777">●</span> Em Projeto
+      <span style="color:#bf2929">●</span> Cancelado
+      <br>
+      <span class="legend-sample" style="border-color:#555"></span> Operação / construção
+      <span class="legend-sample legend-dashed" style="border-color:#555"></span> Projeto futuro
+      <br>
+      <b>Linha 18-Bronze:</b>
+      <span style="color:#bf2929">✕ Cancelada — substituída pelo BRT-ABC.</span>
+      <br><br>
+      Os traçados de expansão e TIC são esquemáticos.
+    </div>
+    <button id="refresh" onclick="copyUpdate()">↻ Atualizar agora</button>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+"use strict";
+
+/* =====================================================
+   DATA E CONFIGURAÇÃO
+===================================================== */
+
+const DATA_ATUALIZACAO = "2026-11-12";
+
+const map = L.map("map",{
+  zoomControl:false,
+  minZoom:9,
+  maxZoom:19,
+  preferCanvas:true,
+  tap:true
+}).setView([-23.57,-46.63],10);
+
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{
+  minZoom:9,
+  maxZoom:19,
+  attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  updateWhenIdle:true,
+  keepBuffer:3
+}).addTo(map);
+
+const allStations=[];
+const lineObjects=[];
+const gpsIcon=L.divIcon({
+  className:"",
+  html:'<div id="gpsmarker"></div>',
+  iconSize:[17,17],
+  iconAnchor:[8.5,8.5]
+});
+
+let mode="all";
+let userMarker=null;
+let accuracyCircle=null;
+let labelTimer=null;
+
+/*
+  Cada linha contém:
+  id, nome, cor, operadora, listas de estações por status,
+  percentual, caminho geográfico esquemático e categoria.
+*/
+
+const LINES = [
+
+/* ================= LINHAS 1 A 13 ================= */
+
+{
+ id:"L1",name:"Linha 1 - Azul",color:"#0455A1",operator:"Metrô-SP",
+ op:`Tucuruvi|Parada Inglesa|Jardim São Paulo-Ayrton Senna|Santana|Carandiru|Portuguesa-Tietê|Armênia|Tiradentes|Luz|São Bento|Sé|Japão-Liberdade|São Joaquim|Vergueiro|Paraíso|Ana Rosa|Vila Mariana|Santa Cruz|Praça da Árvore|Saúde|São Judas|Conceição|Jabaquara`,
+ build:"",project:"",
+ path:[[-23.480,-46.609],[-23.500,-46.620],[-23.520,-46.625],[-23.540,-46.630],[-23.550,-46.635],[-23.565,-46.638],[-23.590,-46.638],[-23.620,-46.640],[-23.646,-46.641]]
+},
+{
+ id:"L2",name:"Linha 2 - Verde",color:"#007E5E",operator:"Metrô-SP",
+ op:`Vila Madalena|Sumaré|Clínicas|Consolação|Trianon-Masp|Brigadeiro|Paraíso|Ana Rosa|Chácara Klabin|Santos-Imigrantes|Alto do Ipiranga|Sacomã|Tamanduateí|Vila Prudente`,
+ build:`Orfanato|Santa Clara|Anália Franco|Vila Formosa|Santa Isabel|Guilherme Giorgi|Aricanduva|Penha`,
+ buildPercent:70,
+ project:`Cerro Corá|Penha de França|Gabriela Mistral|Fernão Dias|Ponte Grande|Dutra`,
+ projectPercent:0,
+ path:[[-23.546,-46.691],[-23.555,-46.680],[-23.561,-46.661],[-23.563,-46.653],[-23.565,-46.640],[-23.570,-46.632],[-23.580,-46.620],[-23.592,-46.606],[-23.602,-46.590],[-23.606,-46.575],[-23.595,-46.560],[-23.586,-46.550],[-23.578,-46.540]]
+},
+{
+ id:"L3",name:"Linha 3 - Vermelha",color:"#EE372F",operator:"Metrô-SP",
+ op:`Palmeiras-Barra Funda|Marechal Deodoro|Santa Cecília|República|Anhangabaú|Sé|Pedro II|Brás|Bresser-Mooca|Belém|Tatuapé|Carrão|Penha|Vila Matilde|Guilhermina-Esperança|Patriarca|Artur Alvim|Corinthians-Itaquera`,
+ build:"",project:"",
+ path:[[-23.525,-46.667],[-23.538,-46.655],[-23.542,-46.647],[-23.545,-46.637],[-23.550,-46.633],[-23.553,-46.627],[-23.546,-46.616],[-23.540,-46.590],[-23.540,-46.565],[-23.540,-46.540],[-23.540,-46.515],[-23.540,-46.490],[-23.540,-46.465]]
+},
+{
+ id:"L4",name:"Linha 4 - Amarela",color:"#FACC15",operator:"ViaQuatro",
+ op:`Vila Sônia|São Paulo-Morumbi|Butantã|Pinheiros|Faria Lima|Fradique Coutinho|Oscar Freire|Paulista|Higienópolis-Mackenzie|República|Luz`,
+ build:`Chácara do Jockey|Taboão da Serra`,buildPercent:20,project:"",
+ path:[[-23.600,-46.735],[-23.590,-46.725],[-23.580,-46.710],[-23.570,-46.700],[-23.565,-46.680],[-23.565,-46.660],[-23.565,-46.650],[-23.560,-46.645],[-23.550,-46.645],[-23.545,-46.640],[-23.535,-46.635]]
+},
+{
+ id:"L5",name:"Linha 5 - Lilás",color:"#9B3894",operator:"ViaMobilidade",
+ op:`Capão Redondo|Campo Limpo|Vila das Belezas|Giovanni Gronchi|Santo Amaro|Largo Treze|Adolfo Pinheiro|Alto da Boa Vista|Borba Gato|Brooklin|Campo Belo|Eucaliptos|Moema|AACD-Servidor|Hospital São Paulo|Santa Cruz|Chácara Klabin`,
+ build:`Comendador Sant'Anna|Jardim Ângela`,buildPercent:15,project:"",
+ path:[[-23.665,-46.770],[-23.655,-46.750],[-23.650,-46.730],[-23.645,-46.710],[-23.650,-46.700],[-23.640,-46.690],[-23.635,-46.680],[-23.630,-46.670],[-23.625,-46.660],[-23.620,-46.650],[-23.615,-46.640],[-23.610,-46.630],[-23.605,-46.620],[-23.600,-46.610],[-23.590,-46.600]]
+},
+{
+ id:"L6",name:"Linha 6 - Laranja",color:"#FF6B00",operator:"Linha Uni",
+ op:"",
+ build:`Brasilândia|Maristela|Itaberaba-Hospital Vila Penteado|João Paulo I|Freguesia do Ó|Santa Marina|Água Branca|SESC-Pompéia|Perdizes|PUC-Cardoso de Almeida|FAAP-Pacaembu|Higienópolis-Mackenzie|14 Bis-Saracura|Bela Vista|São Joaquim`,
+ buildPercent:88,
+ project:`Cambuci|Lins de Vasconcelos|Vila Monumento|São Carlos|Orfanato|Vila Ema|Vila Industrial|Parque São Lucas|Sapopemba|Aricanduva|Cidade Líder`,
+ projectPercent:0,
+ path:[[-23.455,-46.690],[-23.475,-46.690],[-23.495,-46.690],[-23.510,-46.685],[-23.525,-46.680],[-23.535,-46.670],[-23.540,-46.660],[-23.545,-46.650],[-23.550,-46.645],[-23.555,-46.640],[-23.560,-46.635]]
+},
+{
+ id:"L7",name:"Linha 7 - Rubi",color:"#CA016B",operator:"TIC Trens",
+ op:`Jundiaí|Várzea Paulista|Campo Limpo Paulista|Botujuru|Francisco Morato|Baltazar Fidélis|Franco da Rocha|Caieiras|Perus|Vila Aurora|Jaraguá|Vila Clarice|Pirituba|Piqueri|Lapa|Água Branca|Palmeiras-Barra Funda`,
+ build:"",project:"",
+ path:[[-23.185,-46.885],[-23.205,-46.840],[-23.220,-46.810],[-23.260,-46.770],[-23.280,-46.750],[-23.320,-46.735],[-23.350,-46.720],[-23.390,-46.710],[-23.420,-46.700],[-23.455,-46.685],[-23.485,-46.675],[-23.505,-46.670],[-23.525,-46.667]]
+},
+{
+ id:"L8",name:"Linha 8 - Diamante",color:"#97A098",operator:"ViaMobilidade",
+ op:`Amador Bueno|Ambuitá|Santa Rita|Itapevi|Engenheiro Cardoso|Sagrado Coração|Jandira|Jardim Silveira|Jardim Belval|Barueri|Antonio João|Santa Terezinha|Carapicuíba|General Miguel Costa|Quitaúna|Comandante Sampaio|Osasco|Presidente Altino|Imperatriz Leopoldina|Domingos de Moraes|Lapa|Palmeiras-Barra Funda|Júlio Prestes`,
+ build:"",project:"",
+ path:[[-23.510,-46.930],[-23.515,-46.900],[-23.525,-46.870],[-23.530,-46.840],[-23.530,-46.810],[-23.535,-46.780],[-23.535,-46.750],[-23.535,-46.720],[-23.530,-46.690],[-23.530,-46.665],[-23.530,-46.645]]
+},
+{
+ id:"L9",name:"Linha 9 - Esmeralda",color:"#01A9A7",operator:"ViaMobilidade",
+ op:`Varginha|Mendes-Vila Natal|Grajaú|Primavera-Interlagos|Autódromo|Jurubatuba|Socorro|Santo Amaro|Granja Julieta|João Dias|Morumbi|Berrini|Vila Olímpia|Cidade Jardim|Hebraica-Rebouças|Pinheiros|Cidade Universitária|Villa-Lobos-Jaguaré|Ceasa|Presidente Altino|Osasco`,
+ build:"",project:"",
+ path:[[-23.755,-46.700],[-23.740,-46.700],[-23.730,-46.700],[-23.710,-46.695],[-23.690,-46.690],[-23.675,-46.685],[-23.665,-46.690],[-23.650,-46.700],[-23.635,-46.700],[-23.620,-46.700],[-23.600,-46.700],[-23.585,-46.700],[-23.570,-46.700],[-23.555,-46.700],[-23.540,-46.700],[-23.530,-46.720]]
+},
+{
+ id:"L10",name:"Linha 10 - Turquesa",color:"#049FC3",operator:"CPTM",
+ op:`Palmeiras-Barra Funda|Luz|Brás|Juventus-Mooca|Ipiranga|Tamanduateí|São Caetano do Sul|Utinga|Prefeito Saladino|Prefeito Celso Daniel-Santo André|Capuava|Mauá|Guapituba|Ribeirão Pires|Rio Grande da Serra`,
+ build:"",project:"",
+ path:[[-23.525,-46.667],[-23.535,-46.635],[-23.545,-46.615],[-23.565,-46.595],[-23.590,-46.585],[-23.610,-46.570],[-23.620,-46.555],[-23.635,-46.540],[-23.660,-46.530],[-23.680,-46.520],[-23.700,-46.510],[-23.735,-46.490],[-23.745,-46.480]]
+},
+{
+ id:"L11",name:"Linha 11 - Coral",color:"#F68368",operator:"CPTM / Trivia Trens",
+ op:`Palmeiras-Barra Funda|Luz|Brás|Tatuapé|Corinthians-Itaquera|Dom Bosco|José Bonifácio|Guaianases|Antonio Gianetti Neto|Ferraz de Vasconcelos|Poá|Calmon Viana|Suzano|Jundiapeba|Braz Cubas|Mogi das Cruzes|Estudantes`,
+ build:"",project:"",
+ path:[[-23.525,-46.667],[-23.535,-46.635],[-23.540,-46.585],[-23.540,-46.550],[-23.545,-46.515],[-23.545,-46.480],[-23.545,-46.440],[-23.545,-46.400],[-23.545,-46.360],[-23.535,-46.320],[-23.520,-46.280],[-23.505,-46.245],[-23.490,-46.200]]
+},
+{
+ id:"L12",name:"Linha 12 - Safira",color:"#1C146B",operator:"CPTM / Trivia Trens",
+ op:`Brás|Tatuapé|Engenheiro Goulart|USP Leste|Comendador Ermelino|São Miguel Paulista|Jardim Helena-Vila Mara|Itaim Paulista|Jardim Romano|Engenheiro Manoel Feio|Itaquaquecetuba|Aracaré|Calmon Viana`,
+ build:"",project:"",
+ path:[[-23.545,-46.615],[-23.535,-46.570],[-23.515,-46.550],[-23.505,-46.525],[-23.495,-46.500],[-23.490,-46.475],[-23.485,-46.450],[-23.480,-46.425],[-23.475,-46.400],[-23.470,-46.375],[-23.465,-46.350]]
+},
+{
+ id:"L13",name:"Linha 13 - Jade",color:"#00AB5B",operator:"CPTM / Trivia Trens",
+ op:`Palmeiras-Barra Funda|Brás|Tatuapé|Engenheiro Goulart|Guarulhos-Cecap|Aeroporto-Guarulhos`,
+ build:"",
+ project:`Jardim São João|Bonsucesso`,projectPercent:5,
+ path:[[-23.525,-46.667],[-23.545,-46.615],[-23.540,-46.550],[-23.500,-46.520],[-23.465,-46.490],[-23.435,-46.475],[-23.420,-46.465]]
+},
+
+/* ================= LINHAS 14 A 23 ================= */
+
+{
+ id:"L14",name:"Linha 14 - Ônix",color:"#2B2B2B",operator:"Projeto",
+ op:"",
+ build:"",
+ project:`Bonsucesso|Pimentas|Sacramento|Jardim Angélica|São Miguel Paulista|Jacu-Pêssego|Vila Jacuí|Itaquera|Líder|Cidade Líder|Parque do Carmo|Jardim Nossa Senhora do Carmo|Rio das Pedras|Sapopemba|Jardim Planalto|Fazenda da Juta|Oratório|Utinga|Santa Teresinha|Prefeito Celso Daniel-Santo André|Vila Luzita|Jardim Irene`,
+ projectPercent:0,
+ path:[[-23.420,-46.410],[-23.445,-46.400],[-23.475,-46.420],[-23.495,-46.450],[-23.505,-46.475],[-23.535,-46.485],[-23.550,-46.490],[-23.555,-46.510],[-23.560,-46.530],[-23.570,-46.550],[-23.585,-46.570],[-23.600,-46.580],[-23.615,-46.565],[-23.630,-46.550],[-23.645,-46.540],[-23.665,-46.535],[-23.680,-46.530]]
+},
+{
+ id:"L15",name:"Linha 15 - Prata",color:"#858D90",operator:"Metrô-SP",
+ op:`Vila Prudente|Oratório|São Lucas|Camilo Haddad|Vila Tolstói|Vila União|Jardim Planalto|Sapopemba|Fazenda da Juta|São Mateus|Jardim Colonial`,
+ build:`Ipiranga|Boa Esperança|Jacu-Pêssego`,
+ buildPercent:55,
+ project:`Ragueb Chohfi|Cidade Tiradentes`,
+ projectPercent:0,
+ path:[[-23.578,-46.540],[-23.590,-46.535],[-23.600,-46.535],[-23.610,-46.530],[-23.620,-46.525],[-23.630,-46.520],[-23.640,-46.515],[-23.650,-46.510],[-23.660,-46.500],[-23.675,-46.485],[-23.690,-46.470]]
+},
+{
+ id:"L16",name:"Linha 16 - Violeta",color:"#7B3294",operator:"Projeto Metrô-SP",
+ op:"",build:"",
+ project:`Teodoro Sampaio|Oscar Freire|Nove de Julho|Jardim Paulista|Paraíso|Ana Rosa|Aclimação|Lins de Vasconcelos|São Carlos|Paes de Barros|Vila Bertioga|Álvaro Ramos|Regente Feijó|Anália Franco|Abel Ferreira|Renata|Cipriano Rodrigues|Vila Antonieta|Rio das Pedras|Aricanduva|Fazenda do Carmo|Cidade Tiradentes`,
+ projectPercent:0,
+ path:[[-23.565,-46.680],[-23.565,-46.660],[-23.565,-46.645],[-23.575,-46.635],[-23.585,-46.625],[-23.595,-46.610],[-23.590,-46.590],[-23.580,-46.570],[-23.570,-46.550],[-23.570,-46.530],[-23.580,-46.510],[-23.590,-46.490],[-23.600,-46.470],[-23.615,-46.455],[-23.635,-46.445],[-23.655,-46.435],[-23.675,-46.425]]
+},
+{
+ id:"L17",name:"Linha 17 - Ouro",color:"#D4AF37",operator:"ViaMobilidade",
+ op:"",
+ build:`Morumbi|Chucri Zaidan|Vila Cordeiro|Campo Belo|Vereador José Diniz|Brooklin Paulista|Jardim Aeroporto|Congonhas|Washington Luís`,
+ buildPercent:92,
+ project:`Vila Paulista|Jabaquara`,
+ projectPercent:0,
+ path:[[-23.620,-46.700],[-23.625,-46.690],[-23.630,-46.680],[-23.635,-46.670],[-23.640,-46.660],[-23.645,-46.650],[-23.650,-46.640],[-23.655,-46.630],[-23.660,-46.620],[-23.665,-46.610],[-23.675,-46.600]]
+},
+{
+ id:"L18",name:"Linha 18 - Bronze",color:"#8D5524",
+ operator:"Projeto Cancelado — BRT-ABC",
+ cancelled:true,op:"",build:"",
+ project:`Tamanduateí|Goiás|Espaço Cerâmica|Estrada das Lágrimas|Rudge Ramos|Instituto Mauá|Afonsina|Fundação Santo André|Winston Churchill|Senador Vergueiro|Baeta Neves|Paço Municipal|Praça Lauro Gomes|Ferrazópolis|Café Filho|Capitão Casa|Estrada dos Alvarengas`,
+ projectPercent:0,
+ path:[[-23.578,-46.540],[-23.595,-46.550],[-23.610,-46.560],[-23.625,-46.570],[-23.640,-46.580],[-23.655,-46.585],[-23.670,-46.590],[-23.685,-46.595],[-23.700,-46.600],[-23.715,-46.605],[-23.730,-46.610]]
+},
+{
+ id:"L19",name:"Linha 19 - Celeste",color:"#00AEEF",operator:"Projeto Metrô-SP",
+ op:"",build:"",
+ project:`Anhangabaú|São Bento|Mercado|Cerealista|Silva Teles|Catumbi|Vila Maria|Guilherme Cotching|Cerejeiras|Santo Eduardo|Vila Sabrina|Jardim Julieta|Itapegica|Dutra|Vila Augusta|Guarulhos-Centro|Bosque Maia`,
+ projectPercent:5,
+ path:[[-23.550,-46.633],[-23.545,-46.630],[-23.540,-46.625],[-23.535,-46.620],[-23.525,-46.615],[-23.510,-46.605],[-23.495,-46.590],[-23.480,-46.575],[-23.465,-46.560],[-23.450,-46.545],[-23.435,-46.530],[-23.425,-46.515]]
+},
+{
+ id:"L20",name:"Linha 20 - Rosa",color:"#F472B6",operator:"Projeto Metrô-SP",
+ op:"",build:"",
+ project:`Santa Marina|Lapa|Vila Romana|Cerro Corá|Girassol|Teodoro Sampaio|Faria Lima|Tabapuã|JK|Vila Nova Conceição|Moema|Rubem Berta|Indianópolis|Saúde|Abraão de Morais|Cursino|Jardim Clímax|Liviero|Taboão|Rudge Ramos|Afonsina|Instituto Mauá|Paço Municipal|Fundação Santo André|Prefeito Celso Daniel-Santo André`,
+ projectPercent:5,
+ path:[[-23.535,-46.670],[-23.530,-46.680],[-23.535,-46.690],[-23.540,-46.700],[-23.550,-46.690],[-23.560,-46.680],[-23.565,-46.660],[-23.570,-46.640],[-23.575,-46.620],[-23.585,-46.610],[-23.600,-46.610],[-23.620,-46.610],[-23.640,-46.600],[-23.660,-46.590],[-23.675,-46.580],[-23.690,-46.570],[-23.700,-46.555],[-23.690,-46.540],[-23.680,-46.520]]
+},
+{
+ id:"L21",name:"Linha 21 - Vinho",color:"#722F37",operator:"Projeto Metrô-SP",
+ op:"",build:"",
+ project:`Diadema|Piraporinha|Planalto|Paulicéia|Taboão|São Caetano|Vila Prudente|São Lucas|Sapopemba|Cipriano Rodrigues|Nacionalistas|Arraias do Araguaia|Rio das Pedras|Parque do Carmo`,
+ projectPercent:0,
+ path:[[-23.685,-46.620],[-23.675,-46.610],[-23.665,-46.600],[-23.655,-46.590],[-23.645,-46.580],[-23.635,-46.570],[-23.620,-46.560],[-23.605,-46.550],[-23.590,-46.540],[-23.585,-46.525],[-23.580,-46.510],[-23.575,-46.495],[-23.570,-46.480]]
+},
+{
+ id:"L22",name:"Linha 22 - Marrom",color:"#8B4513",operator:"Projeto Metrô-SP",
+ op:"",build:"",
+ project:`Sumaré|Teodoro Sampaio|Faria Lima|Hebraica-Rebouças|Vital Brasil|Butantã|USP|Rio Pequeno|Jardim Esmeralda|Monte Belo|Boa Vista|Santa Maria|Jardim Adalgisa|Parque Continental|Reserva Raposo|Jardim da Glória|Granja Viana|Sabiá|Santo Antônio|Portão|Cotia`,
+ projectPercent:2,
+ path:[[-23.555,-46.680],[-23.560,-46.670],[-23.565,-46.660],[-23.570,-46.650],[-23.575,-46.670],[-23.580,-46.690],[-23.585,-46.710],[-23.590,-46.730],[-23.595,-46.750],[-23.600,-46.770],[-23.605,-46.790],[-23.610,-46.810],[-23.615,-46.830],[-23.620,-46.850],[-23.625,-46.870]]
+},
+{
+ id:"L23",name:"Linha 23 - Limão",color:"#84CC16",operator:"Projeto Metrô-SP",
+ op:"",build:"",
+ project:`Osasco Sul|Cidade de Deus|Presidente Altino|Ayrosa|Mutinga|São Domingos|Anastácio|Pirituba|Elísio Teixeira Leite|Itaberaba|Inajar de Souza|Emílio Carlos|Zilda|Engenheiro Caetano Álvares|Santana|Vila Guilherme|Vila Maria|Gabriela Mistral|Penha|Tatuapé`,
+ projectPercent:0,
+ path:[[-23.550,-46.780],[-23.540,-46.760],[-23.530,-46.740],[-23.520,-46.720],[-23.510,-46.700],[-23.505,-46.680],[-23.500,-46.660],[-23.495,-46.640],[-23.490,-46.625],[-23.485,-46.615],[-23.480,-46.600],[-23.475,-46.580],[-23.470,-46.560],[-23.465,-46.540],[-23.460,-46.520]]
+},
+
+/* ================= TRENS INTERCIDADES ================= */
+
+{
+ id:"TIC-N",name:"TIC Eixo Norte - Campinas",color:"#174C8C",
+ operator:"TIC Trens",
+ op:"",
+ build:`São Paulo - Barra Funda|Jundiaí|Campinas`,
+ buildPercent:10,
+ project:"",
+ category:"TIC",
+ path:[[-23.525,-46.667],[-23.420,-46.700],[-23.350,-46.720],[-23.280,-46.750],[-23.185,-46.885],[-23.100,-46.950],[-22.905,-47.060]]
+},
+{
+ id:"TIC-O",name:"TIC Eixo Oeste - Sorocaba",color:"#64748B",
+ operator:"Projeto TIC",
+ op:"",build:"",
+ project:`São Paulo - Barra Funda|Osasco|Barueri|São Roque|Sorocaba`,
+ projectPercent:5,
+ category:"TIC",
+ path:[[-23.525,-46.667],[-23.530,-46.720],[-23.535,-46.780],[-23.550,-46.850],[-23.530,-46.950],[-23.500,-47.100],[-23.500,-47.450]]
+},
+{
+ id:"TIC-L",name:"TIC Eixo Leste - São José dos Campos",color:"#0F766E",
+ operator:"Projeto TIC",
+ op:"",build:"",
+ project:`São Paulo - Barra Funda|Mogi das Cruzes|Taubaté|São José dos Campos`,
+ projectPercent:0,
+ category:"TIC",
+ path:[[-23.525,-46.667],[-23.520,-46.500],[-23.490,-46.200],[-23.480,-46.050],[-23.450,-45.900],[-23.180,-45.880]]
+},
+{
+ id:"TIC-S",name:"TIC Eixo Sul - Santos",color:"#0E7490",
+ operator:"Projeto TIC",
+ op:"",build:"",
+ project:`São Paulo - Tamanduateí|Santo André|Ribeirão Pires|Cubatão|Santos`,
+ projectPercent:0,
+ category:"TIC",
+ path:[[-23.578,-46.540],[-23.650,-46.530],[-23.700,-46.500],[-23.780,-46.450],[-23.850,-46.430],[-23.960,-46.330]]
+}
+
+];
+
+/* =====================================================
+   FUNÇÕES GEOGRÁFICAS
+===================================================== */
+
+function parseNames(value) {
+  return value ? value.split("|").filter(Boolean) : [];
+}
+
+function interpolatePath(path,count) {
+  if(count<=1) return [path[0]];
+  const distances=[0];
+  let total=0;
+
+  for(let i=1;i<path.length;i++) {
+    total+=Math.hypot(
+      path[i][0]-path[i-1][0],
+      path[i][1]-path[i-1][1]
+    );
+    distances.push(total);
+  }
+
+  const result=[];
+
+  for(let n=0;n<count;n++) {
+    const target=total*n/(count-1);
+    let i=1;
+    while(i<distances.length-1 && distances[i]<target) i++;
+
+    const a=path[i-1],b=path[i];
+    const segment=distances[i]-distances[i-1];
+    const t=segment?(target-distances[i-1])/segment:0;
+
+    result.push([
+      a[0]+(b[0]-a[0])*t,
+      a[1]+(b[1]-a[1])*t
+    ]);
+  }
+  return result;
+}
+
+/* =====================================================
+   POPUPS E STATUS
+===================================================== */
+
+function statusHTML(station,line) {
+  if(line.cancelled) {
+    return `
+      <span class="status cancelled">✕ Projeto Cancelado</span>
+      <div class="progress"><div style="width:0%;background:#c33"></div></div>
+      <div class="cancelled-note">
+        ✕ Projeto Cancelado (Não vai operar como metrô —
+        Substituído pelo corredor de ônibus BRT-ABC)
+        <br><b>Conclusão: 0%</b>
+      </div>`;
+  }
+
+  if(station.status==="op") {
+    return '<span class="status operational">● Em Operação</span>';
+  }
+
+  if(station.status==="build") {
+    return `
+      <span class="status construction">
+        Em Construção: ${station.percent}% concluído
+      </span>
+      <div class="progress"><div style="width:${station.percent}%"></div></div>`;
+  }
+
+  return `
+    <span class="status project">Em Projeto: ${station.percent}%</span>
+    <div class="progress"><div style="width:${station.percent}%"></div></div>`;
+}
+
+function popupHTML(station,line) {
+  return `
+    <div>
+      <div style="font-size:16px;font-weight:bold;margin-bottom:9px">
+        ${station.name}
+      </div>
+      <div style="font-size:12px;margin-bottom:5px">
+        <b>${line.name}</b>
+      </div>
+      <div style="font-size:11px;color:#666;margin-bottom:10px">
+        Operadora: ${line.operator}
+      </div>
+      ${statusHTML(station,line)}
+      <div style="font-size:9px;color:#888;margin-top:12px">
+        Referência: ${DATA_ATUALIZACAO}
+      </div>
+      <div style="font-size:9px;color:#888;margin-top:3px">
+        ${line.category==="TIC"?"Eixo intercidades esquemático.":"Posição geográfica esquemática."}
+      </div>
+    </div>`;
+}
+
+/* =====================================================
+   CONSTRUÇÃO DAS LINHAS
+===================================================== */
+
+function createLine(line) {
+  const operational=parseNames(line.op);
+  const construction=parseNames(line.build);
+  const projects=parseNames(line.project);
+
+  const stations=[
+    ...operational.map(name=>({name,status:"op",percent:100})),
+    ...construction.map(name=>({
+      name,status:"build",
+      percent:line.buildPercent??0
+    })),
+    ...projects.map(name=>({
+      name,
+      status:line.cancelled?"cancelled":"project",
+      percent:line.cancelled?0:(line.projectPercent??0)
+    }))
+  ];
+
+  if(!stations.length) return;
+
+  const positions=interpolatePath(line.path,stations.length);
+  const stationObjects=[];
+  const lineGroup=L.layerGroup();
+
+  stations.forEach((s,index)=>{
+    const station={
+      ...s,
+      coords:positions[index],
+      line,
+      marker:null,
+      label:null
+    };
+
+    const icon=L.divIcon({
+      className:"",
+      html:`<div class="station-dot" style="background:${line.color}"></div>`,
+      iconSize:[11,11],
+      iconAnchor:[5.5,5.5]
+    });
+
+    const marker=L.marker(station.coords,{
+      icon,
+      keyboard:true,
+      title:station.name
+    });
+
+    marker.bindPopup(popupHTML(station,line),{maxWidth:285});
+
+    marker.on("click",()=>{
+      if(map.getZoom()<15) {
+        map.flyTo(station.coords,16,{duration:.4});
+      }
+    });
+
+    const label=L.marker(station.coords,{
+      interactive:false,
+      icon:L.divIcon({
+        className:"station-label",
+        html:station.name,
+        iconSize:null,
+        iconAnchor:[0,-8]
+      })
+    });
+
+    station.marker=marker;
+    station.label=label;
+
+    stationObjects.push(station);
+    allStations.push(station);
+  });
+
+  /*
+    Cada segmento recebe o status das estações adjacentes.
+    Projetos são tracejados; cancelados recebem traçado
+    especial; operação e obras usam linha contínua.
+  */
+
+  for(let i=0;i<stationObjects.length;i++) {
+    const current=stationObjects[i];
+    const next=stationObjects[i+1];
+
+    if(!next) continue;
+
+    let style;
+
+    if(line.cancelled) {
+      style={
+        color:line.color,weight:3,opacity:.9,
+        dashArray:"5 9"
+      };
+    } else if(current.status==="project" || next.status==="project") {
+      style={
+        color:line.color,weight:4,opacity:.85,
+        dashArray:"9 10"
+      };
+    } else if(current.status==="cancelled" || next.status==="cancelled") {
+      style={
+        color:line.color,weight:3,opacity:.9,
+        dashArray:"5 9"
+      };
+    } else {
+      style={
+        color:line.color,weight:5,opacity:.92
+      };
+    }
+
+    L.polyline([current.coords,next.coords],{
+      ...style,smoothFactor:1.2
+    }).addTo(lineGroup);
+  }
+
+  stationObjects.forEach(station=>{
+    lineGroup.addLayer(station.marker);
+  });
+
+  lineObjects.push({
+    line,
+    group:lineGroup,
+    stations:stationObjects,
+    enabled:true
+  });
+}
+
+LINES.forEach(createLine);
+
+/* =====================================================
+   VISIBILIDADE E FILTROS
+===================================================== */
+
+function renderLines() {
+  const container=document.getElementById("lineList");
+  container.innerHTML="";
+
+  const groups=[
+    {title:"REDE METROFERROVIÁRIA — LINHAS 1 A 13",items:lineObjects.filter(x=>!x.line.category)},
+    {title:"EXPANSÕES — LINHAS 14 A 23",items:lineObjects.filter(x=>!x.line.category && Number(x.line.id.slice(1))>=14)},
+    {title:"TRENS INTERCIDADES — TIC",items:lineObjects.filter(x=>x.line.category==="TIC")}
+  ];
+
+  groups.forEach(section=>{
+    const heading=document.createElement("div");
+    heading.className="group-title";
+    heading.textContent=section.title;
+    container.appendChild(heading);
+
+    section.items.forEach(item=>{
+      const line=item.line;
+      const hasOperational=!!line.op;
+      const visible=mode==="all" || hasOperational;
+
+      const row=document.createElement("div");
+      row.className="lineitem";
+
+      const checkbox=document.createElement("input");
+      checkbox.type="checkbox";
+      checkbox.checked=visible;
+      checkbox.dataset.id=line.id;
+
+      item.enabled=visible;
+
+      checkbox.onchange=()=>{
+        item.enabled=checkbox.checked;
+        applyVisibility();
+      };
+
+      const color=document.createElement("div");
+      color.className="linecolor";
+      color.style.background=line.color;
+
+      const description=document.createElement("div");
+      description.className="linetext";
+
+      const statusText=line.cancelled
+        ?"Projeto cancelado"
+        :line.op
+          ?"Possui estações em operação"
+          :line.build
+            ?"Em construção"
+            :"Projeto / expansão";
+
+      description.innerHTML=`
+        <b>${line.name}</b>
+        <small>${line.operator}</small>
+        <em>${statusText}</em>`;
+
+      row.append(checkbox,color,description);
+      container.appendChild(row);
+    });
+  });
+
+  applyVisibility();
+}
+
+function applyVisibility() {
+  lineObjects.forEach(item=>{
+    const line=item.line;
+    const show=item.enabled;
+
+    if(show) {
+      if(!map.hasLayer(item.group)) item.group.addTo(map);
+    } else {
+      if(map.hasLayer(item.group)) map.removeLayer(item.group);
+    }
+
+    item.stations.forEach(station=>{
+      const shouldShow=show &&
+        (mode==="all" || station.status==="op");
+
+      if(shouldShow) {
+        if(!map.hasLayer(station.marker)) station.marker.addTo(map);
+      } else {
+        if(map.hasLayer(station.marker)) map.removeLayer(station.marker);
+        if(map.hasLayer(station.label)) map.removeLayer(station.label);
+      }
+    });
+
+    /*
+      As geometrias das linhas são independentes dos marcadores.
+      No modo Rede Atual, os segmentos futuros não são exibidos.
+    */
+    if(show && mode==="current") {
+      item.group.eachLayer(layer=>{
+        if(layer instanceof L.Polyline && !(layer instanceof L.Marker)) {
+          const latlngs=layer.getLatLngs();
+          const first=latlngs[0];
+          const second=latlngs[1];
+
+          const a=item.stations.find(s=>
+            s.coords[0]===first.lat && s.coords[1]===first.lng
+          );
+          const b=item.stations.find(s=>
+            s.coords[0]===second.lat && s.coords[1]===second.lng
+          );
+
+          const isCurrent=a && b &&
+            a.status==="op" && b.status==="op";
+
+          layer.setStyle({opacity:isCurrent?.92:0});
+        }
+      });
+    } else if(show) {
+      item.group.eachLayer(layer=>{
+        if(layer instanceof L.Polyline && !(layer instanceof L.Marker)) {
+          layer.setStyle({opacity:.92});
+        }
+      });
+    }
+  });
+
+  updateLabels();
+}
+
+function setMode(nextMode) {
+  mode=nextMode;
+
+  document.getElementById("currentBtn")
+    .classList.toggle("active",mode==="current");
+
+  document.getElementById("futureBtn")
+    .classList.toggle("active",mode==="all");
+
+  renderLines();
+}
+
+/* =====================================================
+   RÓTULOS E DETECÇÃO DE COLISÃO
+===================================================== */
+
+function updateLabels() {
+  clearTimeout(labelTimer);
+
+  if(map.getZoom()<15) {
+    allStations.forEach(station=>{
+      if(map.hasLayer(station.label)) map.removeLayer(station.label);
+    });
+    return;
+  }
+
+  labelTimer=setTimeout(()=>{
+    const candidates=[];
+
+    allStations.forEach(station=>{
+      if(!map.hasLayer(station.marker)) {
+        if(map.hasLayer(station.label)) map.removeLayer(station.label);
+        return;
+      }
+
+      if(!map.hasLayer(station.label)) station.label.addTo(map);
+      const element=station.label.getElement();
+
+      if(element) candidates.push({station,element});
+    });
+
+    requestAnimationFrame(()=>{
+      const occupied=[];
+
+      candidates.forEach(item=>{
+        const rect=item.element.getBoundingClientRect();
+
+        const collision=occupied.some(other=>{
+          return !(
+            rect.right<other.left ||
+            rect.left>other.right ||
+            rect.bottom<other.top ||
+            rect.top>other.bottom
+          );
+        });
+
+        item.element.style.display=collision?"none":"";
+        if(!collision) occupied.push(rect);
+      });
+    });
+  },100);
+}
+
+map.on("zoomend moveend",updateLabels);
+
+/* =====================================================
+   PESQUISA
+===================================================== */
+
+const searchInput=document.getElementById("search");
+const suggestions=document.getElementById("suggestions");
+
+searchInput.addEventListener("input",()=>{
+  const query=searchInput.value.trim().toLocaleLowerCase("pt-BR");
+  suggestions.innerHTML="";
+
+  if(query.length<2) {
+    suggestions.style.display="none";
+    return;
+  }
+
+  const matches=allStations.filter(s=>
+    s.name.toLocaleLowerCase("pt-BR").includes(query)
+  ).slice(0,25);
+
+  matches.forEach(station=>{
+    const row=document.createElement("div");
+    row.className="suggestion";
+    row.textContent=station.name+" — "+station.line.name;
+
+    row.onclick=()=>{
+      const item=lineObjects.find(x=>x.line.id===station.line.id);
+
+      if(item && !item.enabled) {
+        item.enabled=true;
+        mode="all";
+        renderLines();
+      }
+
+      map.flyTo(station.coords,16,{duration:.7});
+
+      setTimeout(()=>station.marker.openPopup(),750);
+
+      searchInput.value=station.name;
+      suggestions.style.display="none";
+    };
+
+    suggestions.appendChild(row);
+  });
+
+  suggestions.style.display=matches.length?"block":"none";
+});
+
+document.addEventListener("click",e=>{
+  if(!e.target.closest("#topbar")) {
+    suggestions.style.display="none";
+  }
+});
+
+/* =====================================================
+   GPS
+===================================================== */
+
+function locateUser() {
+  if(!navigator.geolocation) {
+    alert("Geolocalização não disponível neste navegador.");
+    return;
+  }
+
+  map.locate({
+    setView:true,
+    maxZoom:16,
+    enableHighAccuracy:true
+  });
+}
+
+map.on("locationfound",e=>{
+  if(userMarker) map.removeLayer(userMarker);
+  if(accuracyCircle) map.removeLayer(accuracyCircle);
+
+  userMarker=L.marker(e.latlng,{icon:gpsIcon})
+    .addTo(map)
+    .bindPopup("📍 Sua localização");
+
+  accuracyCircle=L.circle(e.latlng,{
+    radius:e.accuracy,
+    color:"#2879ef",
+    fillColor:"#2879ef",
+    fillOpacity:.09,
+    weight:1
+  }).addTo(map);
+
+  userMarker.openPopup();
+});
+
+map.on("locationerror",()=>{
+  alert("Não foi possível obter sua localização. Verifique as permissões de GPS.");
+});
+
+/* =====================================================
+   TEMA
+===================================================== */
+
+function toggleTheme() {
+  document.body.classList.toggle("colored");
+  const colored=document.body.classList.contains("colored");
+
+  document.getElementById("themebtn").textContent=
+    colored?"🎨 Ruas Colorido":"☀ Claro Suave";
+}
+
+/* =====================================================
+   GAVETA
+===================================================== */
+
+function toggleDrawer() {
+  const drawer=document.getElementById("drawer");
+  drawer.classList.toggle("open");
+
+  document.getElementById("drawerarrow").textContent=
+    drawer.classList.contains("open")?"⌄":"⌃";
+}
+
+/* =====================================================
+   ATUALIZAÇÃO TRIMESTRAL
+===================================================== */
+
+function checkDataAge() {
+  const updated=new Date(DATA_ATUALIZACAO+"T00:00:00");
+  const today=new Date();
+
+  const days=(today.getTime()-updated.getTime())/
+    (1000*60*60*24);
+
+  if(days>=90) {
+    document.getElementById("stale").style.display="block";
+  }
+}
+
+async function copyUpdate() {
+  try {
+    await navigator.clipboard.writeText("Atualizar");
+    alert('Comando "Atualizar" copiado!');
+  } catch(e) {
+    const textarea=document.createElement("textarea");
+    textarea.value="Atualizar";
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    textarea.remove();
+    alert('Comando "Atualizar" copiado!');
+  }
+}
+
+/* =====================================================
+   INICIALIZAÇÃO
+===================================================== */
+
+document.getElementById("updatedLabel").textContent=
+  "Última referência: "+DATA_ATUALIZACAO+
+  " | 23 linhas + 4 eixos TIC";
+
+renderLines();
+checkDataAge();
+
+setTimeout(()=>{
+  updateLabels();
+  map.invalidateSize();
+},300);
+
+</script>
+</body>
+</html>
