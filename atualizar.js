@@ -10,7 +10,7 @@ async function atualizarDados() {
   const host = 'generativelanguage' + '.googleapis.com';
   const base = 'https://' + host + '/v1beta/';
 
-  // 1. Descobre automaticamente qual modelo Flash esta ativo na sua chave gratuita
+  // 1. Descobre automaticamente qual modelo Flash novo esta ativo na sua chave
   const listRes = await fetch(base + 'models?key=' + apiKey);
   if (!listRes.ok) {
     throw new Error('Erro ao listar modelos: ' + listRes.status + ' ' + await listRes.text());
@@ -20,12 +20,16 @@ async function atualizarDados() {
     m.supportedGenerationMethods &&
     m.supportedGenerationMethods.includes('generateContent') &&
     m.name.includes('flash') &&
+    !m.name.includes('2.5') &&
+    !m.name.includes('2.0') &&
+    !m.name.includes('1.5') &&
     !m.name.includes('image') &&
     !m.name.includes('audio')
   );
 
   if (!modeloValido) {
-    throw new Error('Nenhum modelo Flash encontrado na chave.');
+    console.log('Modelos encontrados:', listData.models.map(m => m.name));
+    throw new Error('Nenhum modelo Flash novo encontrado na chave.');
   }
   console.log('Usando modelo ativo:', modeloValido.name);
 
