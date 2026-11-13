@@ -9,7 +9,8 @@ async function atualizarDados() {
 
   const prompt = 'Voce e um especialista em transporte ferroviario de Sao Paulo. Pesquise na internet o status atualizado das obras e operacoes das linhas do Metro, CPTM, ViaQuatro, ViaMobilidade, Linha Uni, Trivia Trens, TIC Trens e Trens Intercidades (TIC) de Sao Paulo ate a data de hoje (' + hoje + '). Atualize o JSON abaixo movendo estacoes inauguradas para "op", estacoes com obras iniciadas para "build", atualizando porcentagens ("buildPct", "projectPct"), notas ("note") e mudando "DATA_ATUALIZACAO" para "' + hoje + '". Mantenha EXATAMENTE a mesma estrutura e chaves do JSON original. Responda APENAS com o JSON valido, sem crases markdown ou explicacoes.\n\nJSON ATUAL:\n' + dadosAtuais;
 
-  const base = 'https://googleapis.com';
+  const host = 'generativelanguage' + '.googleapis.com';
+const base = 'https://' + host + '/v1beta/models/';
   const modelo = 'gemini-3.8-flash:generateContent';
   const url = base + modelo + '?key=' + apiKey;
 
