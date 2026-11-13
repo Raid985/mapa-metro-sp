@@ -7,28 +7,24 @@ async function atualizarDados() {
   const dadosAtuais = fs.readFileSync('dados.json', 'utf8');
   const hoje = new Date().toISOString().split('T');
 
-  const prompt = `Voce e um especialista em transporte ferroviario de Sao Paulo. 
-Pesquise na internet o status atualizado das obras e operacoes das linhas do Metro, CPTM, ViaQuatro, ViaMobilidade, Linha Uni, Trivia Trens, TIC Trens e Trens Intercidades (TIC) de Sao Paulo ate a data de hoje (${hoje}).
-Atualize o JSON abaixo movendo estacoes inauguradas para "op", estacoes com obras iniciadas para "build", atualizando porcentagens ("buildPct", "projectPct"), notas ("note") e mudando "DATA_ATUALIZACAO" para "${hoje}".
-Mantenha EXATAMENTE a mesma estrutura e chaves do JSON original. Responda APENAS com o JSON valido, sem crases markdown ou explicacoes.
+  const prompt = 'Voce e um especialista em transporte ferroviario de Sao Paulo. Pesquise na internet o status atualizado das obras e operacoes das linhas do Metro, CPTM, ViaQuatro, ViaMobilidade, Linha Uni, Trivia Trens, TIC Trens e Trens Intercidades (TIC) de Sao Paulo ate a data de hoje (' + hoje + '). Atualize o JSON abaixo movendo estacoes inauguradas para "op", estacoes com obras iniciadas para "build", atualizando porcentagens ("buildPct", "projectPct"), notas ("note") e mudando "DATA_ATUALIZACAO" para "' + hoje + '". Mantenha EXATAMENTE a mesma estrutura e chaves do JSON original. Responda APENAS com o JSON valido, sem crases markdown ou explicacoes.\n\nJSON ATUAL:\n' + dadosAtuais;
 
-JSON ATUAL:
-${dadosAtuais}`;
+  const url = 'https://googleapis.com';
 
-  const response = await fetch(
-    `https://googleapis.com{apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        tools: [{ googleSearch: {} }]
-      })
-    }
-  );
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': apiKey
+    },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      tools: [{ googleSearch: {} }]
+    })
+  });
 
   if (!response.ok) {
-    throw new Error(`Erro na API Gemini: ${response.status} ${await response.text()}`);
+    throw new Error('Erro na API Gemini: ' + response.status + ' ' + await response.text());
   }
 
   const data = await response.json();
