@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#ffffff"><title>Rede Metropolitana de São Paulo · Horizonte 2040–2050</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<style>
+:root{--ink:#17212b;--muted:#64717d;--line:#e6eaee;--panel:#fff;--shadow:0 4px 22px #14202b20}*{box-sizing:border-box}html,body,#app{height:100%;height:100dvh;width:100%;margin:0;overflow:hidden;font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial;color:var(--ink)}#map{position:absolute;inset:0;background:#e9edf0}.leaflet-tile-pane{filter:grayscale(85%) brightness(106%) contrast(88%);transition:filter .2s}.leaflet-tile-pane.color{filter:none}.leaflet-control-zoom{border:0!important;box-shadow:var(--shadow)!important}.leaflet-control-zoom a{color:#263746!important}.topbar{position:absolute;z-index:1000;top:calc(env(safe-area-inset-top) + 10px);left:12px;right:12px;display:flex;gap:8px;align-items:center;pointer-events:none}.searchbox,.iconbtn,.drawer,.warning{background:#fff;border:1px solid #e5e9ed;border-radius:13px;box-shadow:var(--shadow)}.searchbox{pointer-events:auto;display:flex;align-items:center;gap:8px;padding:0 12px;flex:1;max-width:520px;height:46px}.searchbox input{border:0;outline:0;width:100%;font:inherit;background:transparent;color:var(--ink)}.iconbtn{pointer-events:auto;width:44px;height:44px;border:0;font-size:18px;cursor:pointer}.warning{display:none;pointer-events:auto;position:absolute;top:58px;left:0;right:0;padding:9px 12px;align-items:center;justify-content:space-between;gap:8px;font-size:12px}.warning button,.action{border:0;border-radius:8px;background:#f0f3f6;padding:7px 9px;font:inherit;cursor:pointer;color:#23313d;white-space:nowrap}.warning.show{display:flex}.suggestions{position:absolute;top:50px;left:0;width:min(520px,calc(100vw - 80px));background:#fff;border-radius:12px;box-shadow:var(--shadow);max-height:42vh;overflow:auto;display:none;pointer-events:auto}.suggestions.show{display:block}.suggestions button{display:block;width:100%;text-align:left;background:#fff;border:0;border-bottom:1px solid #f0f2f4;padding:11px 14px;font:inherit}.suggestions button:active{background:#f3f6f8}.drawer{position:absolute;z-index:1000;bottom:calc(env(safe-area-inset-bottom) + 12px);left:12px;right:12px;max-height:min(54vh,480px);overflow:hidden;display:flex;flex-direction:column}.drawer.collapsed{width:148px;right:auto}.drawerhead{height:48px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 14px;border-bottom:1px solid var(--line);font-weight:700}.drawerbody{overflow:auto;padding:8px 12px 14px}.collapsed .drawerbody{display:none}.lineitem{display:flex;align-items:center;gap:9px;padding:8px 2px;border-bottom:1px solid #f2f4f6}.lineitem input{width:17px;height:17px;accent-color:#334b60}.swatch{width:23px;height:5px;border-radius:8px;flex:none}.linename{font-weight:650;flex:1}.operator{font-size:11px;color:var(--muted)}.legendfoot{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 0 2px;color:var(--muted);font-size:11px}.leaflet-popup-content-wrapper{border-radius:12px;box-shadow:0 4px 24px #0002}.leaflet-popup-content{margin:14px 16px;min-width:210px}.pname{font-size:16px;font-weight:800;margin-bottom:7px}.pmeta{color:#4c5964;font-size:12px;margin:3px 0}.status{display:inline-block;margin-top:9px;padding:4px 8px;border-radius:20px;font-weight:700;font-size:11px}.oper{background:#e4f5e9;color:#14763a}.build{background:#fff0db;color:#9b5900}.project{background:#edf0f3;color:#56616b}.progress{height:7px;background:#edf0f2;border-radius:10px;overflow:hidden;margin-top:7px}.progress span{display:block;height:100%;background:#e49a36}.station-label{background:#fff;border:1px solid #dce2e7;border-radius:4px;padding:1px 4px;font-size:10px;font-weight:650;color:#263541;white-space:nowrap;box-shadow:0 1px 3px #0002}.station-label:before{display:none}.station-dot{border:2px solid white;border-radius:50%;box-shadow:0 0 0 1px #52606d;background:#273746}.leaflet-tooltip{opacity:1}.leaflet-bottom.leaflet-right{margin-bottom:68px}.smallnote{font-size:10px;color:#77838e;margin-top:8px}.map-disclaimer{position:absolute;z-index:500;right:12px;bottom:calc(env(safe-area-inset-bottom) + 76px);max-width:230px;padding:7px 9px;background:#ffffffed;border:1px solid #e5e9ed;border-radius:9px;box-shadow:var(--shadow);font-size:10px;color:#586570;pointer-events:none}
+@media(min-width:760px){.topbar{left:18px;right:auto;width:560px}.drawer{left:18px;right:auto;width:330px;max-height:70vh;bottom:18px}.drawer.collapsed{width:148px}.leaflet-bottom.leaflet-right{margin-bottom:0}}
+</style></head><body><div id="app"><div id="map"></div>
+<div class="topbar"><div class="searchbox"><span>⌕</span><input id="search" autocomplete="off" placeholder="Buscar estação…"><div id="suggestions" class="suggestions"></div></div><button id="basemap" class="iconbtn" title="Alternar estilo do mapa">◐</button></div>
+<div class="map-disclaimer">Traçados de linhas em projeto e corredores TIC são indicativos. Não substituem geometrias oficiais de engenharia.</div><div id="warning" class="warning"><span>⚠️ Dados com mais de 3 meses</span><button id="copyUpdate">Atualizar no GitHub</button></div>
+<div id="drawer" class="drawer"><div class="drawerhead"><span>☰ Linhas · 1–23 + TIC</span><button id="toggleDrawer" class="action">Recolher</button></div><div id="lineList" class="drawerbody"></div></div></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+'use strict';
+const GITHUB_ACTION_URL = 'https://github.com/Raid985/mapa-metro-sp/actions/workflows/atualizar.yml';
+
+let DATA_ATUALIZACAO = '', linhas = [], tics = [], lineById = {};
+const stations = [], lineLayers = {}, stationLayers = [], ticLayers = {};
+const norm = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+
+const map = L.map('map',{zoomControl:false,minZoom:9,maxZoom:19,zoomSnap:.5,preferCanvas:true}).setView([-23.57,-46.63],10);
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap',crossOrigin:true}).addTo(map);
+L.control.zoom({position:'bottomright'}).addTo(map);
+
+function popupHTML(s){
+  const names=s.linhas.map(id=>lineById[id].nome).join(', '),
+        ops=[...new Set(s.linhas.map(id=>lineById[id].operadora))].join(', ');
+  let badge='',bar='';
+  if(s.status==='Em Operação'){
+    badge='<span class="status oper">● Em Operação</span>';
+  }else{
+    const p=s.pct;
+    badge=`<span class="status ${s.status==='Em Construção'?'build':'project'}">${s.status}${p===null?'':' · '+p+'% concluído'}</span>`;
+    if(p!==null)bar=`<div class="progress"><span style="width:${Math.max(0,Math.min(100,p))}%"></span></div>`;
+  }
+  return `<div class="pname">${s.nome}</div><div class="pmeta"><b>Linha(s):</b> ${names}</div><div class="pmeta"><b>Concessionária(s):</b> ${ops}</div>${badge}${bar}${s.nota?`<div class="smallnote">${s.nota}</div>`:''}`;
+}
+
+function addStation(s,latlng){
+  s.latlng=latlng;
+  const firstId=s.linhas.at(0);
+  const color=lineById[firstId].cor;
+  const m=L.circleMarker(latlng,{radius:5,color:'#fff',weight:2,fillColor:color,fillOpacity:1}).addTo(map);
+  m.bindPopup(()=>popupHTML(s),{maxWidth:290});
+  m.stationData=s;
+  stationLayers.push(m);
+}
+
+function updateLabels(){
+  const z=map.getZoom();
+  stationLayers.forEach(m=>{
+    if(z>=15){
+      if(!m.getTooltip())m.bindTooltip(m.stationData.nome,{permanent:true,direction:'top',offset:[0,-7],className:'station-label'});
+      m.openTooltip();
+    }else if(m.getTooltip()){
+      m.unbindTooltip();
+    }
+  });
+  requestAnimationFrame(resolveCollisions);
+}
+
+function resolveCollisions(){
+  if(map.getZoom()<15)return;
+  const labels=[...document.querySelectorAll('.station-label')];
+  const kept=[];
+  for(const el of labels){
+    el.style.visibility='hidden';
+    const r=el.getBoundingClientRect();
+    if(!r.width||!r.height)continue;
+    const hit=kept.some(a=>!(r.right<a.left||r.left>a.right||r.bottom<a.top||r.top>a.bottom));
+    if(!hit){el.style.visibility='visible';kept.push(r)}
+  }
+}
+
+map.on('zoomend moveend',updateLabels);
+
+const overpass='https://overpass-api.de/api/interpreter';
+async function loadStations(){
+  const q='[out:json][timeout:45];(node["railway"="station"](-23.95,-46.95,-23.15,-46.20);node["public_transport"="station"](-23.95,-46.95,-23.15,-46.20);way["railway"="station"](-23.95,-46.95,-23.15,-46.20);relation["public_transport"="stop_area"](-23.95,-46.95,-23.15,-46.20););out center tags;';
+  try{
+    const r=await fetch(overpass,{method:'POST',body:q,headers:{'Content-Type':'text/plain'}});
+    if(!r.ok)throw Error('Overpass HTTP '+r.status);
+    const data=await r.json();
+    const candidates=data.elements.map(e=>({name:e.tags?.name,lat:e.lat??e.center?.lat,lon:e.lon??e.center?.lon})).filter(x=>x.name&&Number.isFinite(x.lat)&&Number.isFinite(x.lon));
+    let matched=0;
+    for(const s of stations){
+      const target=norm(s.nome);
+      let c=candidates.find(x=>norm(x.name)===target);
+      if(!c)c=candidates.find(x=>norm(x.name).includes(target)||target.includes(norm(x.name)));
+      if(c){addStation(s,[c.lat,c.lon]);matched++}
+    }
+    for(const l of linhas){
+      const pts=stations.filter(s=>s.linhas.includes(l.id)&&s.latlng).map(s=>s.latlng);
+      if(pts.length>1){
+        lineLayers[l.id]=L.polyline(pts,{color:l.cor,weight:4,opacity:.88,dashArray:'7 5',lineCap:'round',lineJoin:'round'}).addTo(map);
+        lineLayers[l.id].bringToBack();
+      }
+    }
+    updateLabels();
+    await drawTics();
+    document.getElementById('loadInfo').textContent=`${matched} de ${stations.length} estações localizadas no OpenStreetMap; corredores TIC apenas indicativos`;
+    if(matched)map.fitBounds(L.latLngBounds(stationLayers.map(m=>m.getLatLng())).pad(.05));
+  }catch(err){
+    document.getElementById('loadInfo').textContent='Falha ao consultar dados geográficos OSM. Verifique a conexão e recarregue.';
+    console.error(err);
+  }
+}
+
+async function drawTics(){
+  for(const tic of tics){
+    const start=stations.find(s=>norm(s.nome)===norm(tic.origem)&&s.latlng);
+    if(!start)continue;
+    try{
+      const url='https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q='+encodeURIComponent(tic.destino);
+      const response=await fetch(url,{headers:{'Accept-Language':'pt-BR'}});
+      if(!response.ok)continue;
+      const found=await response.json();
+      if(!found.length)continue;
+      const primeiro=found.at(0);
+      const end=[Number(primeiro.lat),Number(primeiro.lon)];
+      if(!Number.isFinite(end.at(0))||!Number.isFinite(end.at(1)))continue;
+      ticLayers[tic.id]=L.polyline([start.latlng,end],{color:tic.cor,weight:4,opacity:.9,dashArray:'3 9',lineCap:'round'}).addTo(map);
+      ticLayers[tic.id].bindPopup(`<b>${tic.nome}</b><br>${tic.status}: ${tic.pct}%<br><small>Corredor indicativo entre pontos de referência; não é traçado oficial georreferenciado.</small>`);
+    }catch(err){console.warn('Não foi possível geocodificar '+tic.nome,err)}
+  }
+}
+
+function buildLegend(){
+  const root=document.getElementById('lineList');root.innerHTML='';
+  for(const l of linhas){
+    const row=document.createElement('label');row.className='lineitem';
+    row.innerHTML=`<input type="checkbox" checked data-id="${l.id}"><span class="swatch" style="background:${l.cor}"></span><span class="linename">${l.nome}<div class="operator">${l.operadora}</div></span>`;
+    row.querySelector('input').addEventListener('change',e=>{
+      const on=e.target.checked;
+      stationLayers.forEach(m=>{
+        if(m.stationData.linhas.includes(l.id)){
+          const visible=m.stationData.linhas.some(id=>document.querySelector(`[data-id="${id}"]`)?.checked);
+          if(visible)m.addTo(map);else map.removeLayer(m);
+        }
+      });
+      if(lineLayers[l.id])on?lineLayers[l.id].addTo(map):map.removeLayer(lineLayers[l.id]);
+    });
+    root.appendChild(row);
+  }
+  const sub=document.createElement('div');sub.className='smallnote';sub.style.cssText='font-weight:800;margin:12px 0 4px';sub.textContent='Trens Intercidades (corredores indicativos)';root.appendChild(sub);
+  for(const tic of tics){
+    const row=document.createElement('label');row.className='lineitem';
+    row.innerHTML=`<input type="checkbox" checked data-id="${tic.id}"><span class="swatch" style="height:0;border-top:3px dashed ${tic.cor};background:transparent"></span><span class="linename">${tic.nome}<div class="operator">${tic.status} · ${tic.pct}% · ${tic.operadora}</div></span>`;
+    row.querySelector('input').addEventListener('change',e=>{const layer=ticLayers[tic.id];if(layer)e.target.checked?layer.addTo(map):map.removeLayer(layer)});
+    root.appendChild(row);
+  }
+  const foot=document.createElement('div');foot.className='legendfoot';
+  foot.innerHTML=`<span>Última atualização: ${DATA_ATUALIZACAO}</span><button class="action" id="refresh">↻ Atualizar agora</button>`;
+  root.appendChild(foot);
+  const note=document.createElement('div');note.id='loadInfo';note.className='smallnote';
+  note.textContent='Carregando estações do OpenStreetMap…';root.appendChild(note);
+  document.getElementById('refresh').onclick=()=>window.open(GITHUB_ACTION_URL,'_blank');
+}
+
+async function initApp(){
+  try{
+    const res = await fetch('dados.json?v=' + Date.now());
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const db = await res.json();
+    DATA_ATUALIZACAO = db.DATA_ATUALIZACAO;
+    linhas = db.linhas;
+    tics = db.tics;
+    lineById = Object.fromEntries(linhas.map(l=>[l.id,l]));
+
+    for(const l of linhas){
+      for(const [field,status,pct] of [['op','Em Operação',100],['build','Em Construção',l.buildPct??null],['project','Em Projeto',l.projectPct??0]]){
+        if(!l[field])continue;
+        for(const nome of l[field].split('|')){
+          let s=stations.find(x=>norm(x.nome)===norm(nome));
+          if(!s){s={nome,linhas:[],status,pct,nota:l.note||(pct!==null&&status!=='Em Operação'?'Percentual indicativo informado na solicitação; não equivale a medição oficial de avanço físico.':'')};stations.push(s)}
+          if(!s.linhas.includes(l.id))s.linhas.push(l.id);
+          if(status==='Em Operação'){s.status=status;s.pct=100}
+          else if(s.status!=='Em Operação'&&status==='Em Construção'){s.status=status;s.pct=pct}
+        }
+      }
+    }
+
+    buildLegend();
+    loadStations();
+
+    const age=(Date.now()-new Date(DATA_ATUALIZACAO+'T00:00:00').getTime())/86400000;
+    if(age>=90)document.getElementById('warning').classList.add('show');
+    document.getElementById('copyUpdate').onclick=()=>window.open(GITHUB_ACTION_URL,'_blank');
+  }catch(err){
+    document.getElementById('lineList').innerHTML='<div class="smallnote">Erro ao carregar dados.json: ' + err.message + '</div>';
+    console.error('Erro ao carregar dados.json:', err);
+  }
+}
+
+initApp();
+
+const search=document.getElementById('search'),suggest=document.getElementById('suggestions');
+search.addEventListener('input',()=>{
+  const q=norm(search.value);suggest.innerHTML='';
+  if(q.length<2){suggest.classList.remove('show');return}
+  const matches=stations.filter(s=>norm(s.nome).includes(q)).slice(0,12);
+  for(const s of matches){
+    const b=document.createElement('button');
+    b.textContent=s.nome+' · '+s.linhas.map(id=>lineById[id].nome.replace('Linha ','')).join(', ');
+    b.onclick=()=>{
+      search.value=s.nome;suggest.classList.remove('show');
+      if(s.latlng){
+        map.flyTo(s.latlng,16,{duration:1});
+        const m=stationLayers.find(x=>x.stationData===s);
+        if(m)m.openPopup();
+      }else alert('Coordenada ainda não localizada no OpenStreetMap para esta estação.');
+    };
+    suggest.appendChild(b);
+  }
+  suggest.classList.toggle('show',matches.length>0);
+});
+document.addEventListener('click',e=>{if(!e.target.closest('.searchbox'))suggest.classList.remove('show')});
+document.getElementById('basemap').onclick=()=>document.querySelector('.leaflet-tile-pane').classList.toggle('color');
+document.getElementById('toggleDrawer').onclick=()=>{const d=document.getElementById('drawer');d.classList.toggle('collapsed');document.getElementById('toggleDrawer').textContent=d.classList.contains('collapsed')?'Expandir':'Recolher'};
+</script></body></html>
