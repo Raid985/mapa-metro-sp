@@ -11,7 +11,7 @@ async function atualizarDados() {
 
   const host = 'generativelanguage' + '.googleapis.com';
 const base = 'https://' + host + '/v1beta/models/';
-  const modelo = 'gemini-3.8-flash:generateContent';
+  gemini-3.8-flash-lite:generateContent;
   const url = base + modelo + '?key=' + apiKey;
 
   const response = await fetch(url, {
