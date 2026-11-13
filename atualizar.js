@@ -1,5 +1,7 @@
 const fs = require('fs');
 
+const esperar = ms => new Promise(r => setTimeout(r, ms));
+
 async function atualizarDados() {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('GEMINI_API_KEY nao configurada.');
@@ -10,50 +12,41 @@ async function atualizarDados() {
   const host = 'generativelanguage' + '.googleapis.com';
   const base = 'https://' + host + '/v1beta/';
 
-  // 1. Descobre automaticamente qual modelo Flash novo esta ativo na sua chave
-  const listRes = await fetch(base + 'models?key=' + apiKey);
-  if (!listRes.ok) {
-    throw new Error('Erro ao listar modelos: ' + listRes.status + ' ' + await listRes.text());
-  }
-  const listData = await listRes.json();
-  const modeloValido = listData.models.find(m =>
-    m.supportedGenerationMethods &&
-    m.supportedGenerationMethods.includes('generateContent') &&
-    m.name.includes('flash') &&
-    !m.name.includes('2.5') &&
-    !m.name.includes('2.0') &&
-    !m.name.includes('1.5') &&
-    !m.name.includes('image') &&
-    !m.name.includes('audio')
-  );
-
-  if (!modeloValido) {
-    console.log('Modelos encontrados:', listData.models.map(m => m.name));
-    throw new Error('Nenhum modelo Flash novo encontrado na chave.');
-  }
-  console.log('Usando modelo ativo:', modeloValido.name);
-
-  // 2. Gera o JSON atualizado
   const prompt = 'Voce e um especialista em transporte ferroviario de Sao Paulo. Com base nas informacoes mais recentes das obras e operacoes das linhas do Metro, CPTM, ViaQuatro, ViaMobilidade, Linha Uni, Trivia Trens, TIC Trens e Trens Intercidades (TIC) de Sao Paulo ate ' + hoje + ', atualize o JSON abaixo movendo estacoes inauguradas para "op", estacoes com obras iniciadas para "build", atualizando porcentagens ("buildPct", "projectPct"), notas ("note") e mudando "DATA_ATUALIZACAO" para "' + hoje + '". Mantenha EXATAMENTE a mesma estrutura e chaves do JSON original. Responda APENAS com o JSON valido, sem crases markdown ou explicacoes.\n\nJSON ATUAL:\n' + dadosAtuais;
 
-  const url = base + modeloValido.name + ':generateContent?key=' + apiKey;
+  const modelos = ['models/gemini-flash-latest', 'models/gemini-flash-lite-latest'];
+  let textoResposta = null;
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }]
-    })
-  });
+  for (let tentativa = 1; tentativa <= 4; tentativa++) {
+    const modeloAtual = modelos.at((tentativa - 1) % modelos.length);
+    console.log('Tentativa ' + tentativa + ' usando ' + modeloAtual + '...');
 
-  if (!response.ok) {
-    throw new Error('Erro na API Gemini: ' + response.status + ' ' + await response.text());
+    const response = await fetch(base + modeloAtual + ':generateContent?key=' + apiKey, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }]
+      })
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      const candidato = data.candidates.at(0);
+      const parte = candidato.content.parts.at(0);
+      textoResposta = parte.text.replace(/```json/g, '').replace(/```/g, '').trim();
+      break;
+    }
+
+    const erroTexto = await response.text();
+    console.warn('Falha na tentativa ' + tentativa + ' (' + response.status + '): ' + erroTexto.slice(0, 150));
+
+    if (tentativa < 4) {
+      console.log('Aguardando 15 segundos antes de tentar novamente...');
+      await esperar(15000);
+    } else {
+      throw new Error('Todas as tentativas falharam. Ultimo erro: ' + response.status + ' ' + erroTexto);
+    }
   }
-
-  const data = await response.json();
-  const candidato = data.candidates.at(0);
-  const parte = candidato.content.parts.at(0);
-  let textoResposta = parte.text.replace(/```json/g, '').replace(/```/g, '').trim();
 
   const jsonValidado = JSON.parse(textoResposta);
   fs.writeFileSync('dados.json', JSON.stringify(jsonValidado, null, 2), 'utf8');
